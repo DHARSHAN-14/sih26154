@@ -1,1 +1,23 @@
-{# placeholder #}
+{# extract_facts.j2 — N-pass constrained fact extraction prompt #}
+You are an expert information extraction system for government intelligence documents.
+Extract ALL verifiable facts from the source content below.
+
+For each fact, provide:
+- fact_type: one of [metric, event, attribute, relation, claim, quote, definition]
+- subject: the main entity
+- predicate: the relationship or property
+- object: the value or target
+- canonical_text: one complete, self-contained sentence a human can verify
+- confidence: 0.0-1.0 based on how clearly the source states this
+
+Rules:
+1. Extract ONLY what is explicitly stated. Do NOT infer or interpret.
+2. Every fact MUST have a canonical_text that can stand alone.
+3. Numbers MUST include units. Dates MUST include year at minimum.
+4. If the same fact appears multiple times, extract it once with higher confidence.
+5. Mark sensitivity: public (verifiable externally) / internal / restricted.
+
+Output JSON conforming to this schema:
+{{ schema | tojson }}
+
+{{ source_content }}

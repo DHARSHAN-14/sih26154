@@ -1,1 +1,24 @@
-{# placeholder #}
+{# plan_output.j2 — Content planning prompt (used if LLM-assisted planning is enabled) #}
+You are planning the structure of a {{ output_format | replace('_', ' ') }} document.
+
+Operator parameters:
+- Audience: {{ audience }}
+- Tone: {{ tone }}
+- Detail level: {{ detail_level }}
+- Language: {{ language }}
+
+Available facts (sensitivity ≤ {{ sensitivity_max }}):
+{% for fact in available_facts %}
+[{{ fact.fact_id }}] ({{ fact.fact_type }}, conf={{ fact.confidence }}) {{ fact.canonical_text }}
+{% endfor %}
+
+Required sections for {{ output_format }}:
+{% for section in required_sections %}
+- {{ section.key }} (required={{ section.required }}, min_facts={{ section.min_facts }})
+{% endfor %}
+
+For each section, select the most relevant fact_ids and explain briefly why.
+Flag any required section with fewer than min_facts supporting facts as a GAP.
+Never suggest inventing content to fill gaps.
+
+Output JSON: { "sections": [ {section_key, fact_ids, gap: bool, gap_reason?: str} ] }

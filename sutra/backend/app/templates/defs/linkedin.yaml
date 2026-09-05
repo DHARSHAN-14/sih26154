@@ -1,1 +1,53 @@
-# placeholder
+id: linkedin
+version: 1
+renderer: social
+content_contract:
+  sections:
+    - key: hook
+      required: true
+      max_chars: 150
+    - key: body
+      required: true
+      min_facts: 1
+      max_chars: 2600
+    - key: call_to_action
+      required: false
+      max_chars: 100
+    - key: hashtags
+      required: false
+      max_claims: 5
+layout_contract:
+  renderer: social
+  max_chars: 3000
+  checks: [char_limit, hashtag_count]
+parameter_bindings:
+  detail_level:
+    low:
+      include: [hook, body]
+      max_claims_per_section: 2
+    medium:
+      include: [hook, body, call_to_action]
+      max_claims_per_section: 3
+    high:
+      include: "*"
+      max_claims_per_section: 4
+  audience:
+    executive:
+      tone: formal
+      jargon: strip
+      sensitivity_max: public
+    technical:
+      tone: precise
+      jargon: keep
+      sensitivity_max: public
+    public:
+      tone: plain
+      jargon: strip
+      sensitivity_max: public
+    field:
+      tone: plain
+      jargon: keep
+      sensitivity_max: public
+  language:
+    supported: [en, hi, ta]
+    generate_in_target: true
