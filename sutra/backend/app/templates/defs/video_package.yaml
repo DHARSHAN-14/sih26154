@@ -1,1 +1,62 @@
-# placeholder
+id: video_package
+version: 1
+renderer: video
+content_contract:
+  sections:
+    - key: intro_shot
+      required: true
+      max_chars: 300
+    - key: context_shot
+      required: true
+      min_facts: 1
+      max_chars: 400
+    - key: finding_shot_1
+      required: true
+      min_facts: 1
+      max_chars: 300
+    - key: finding_shot_2
+      required: false
+      min_facts: 1
+      max_chars: 300
+    - key: impact_shot
+      required: false
+      min_facts: 1
+      max_chars: 300
+    - key: call_to_action_shot
+      required: true
+      max_chars: 200
+layout_contract:
+  renderer: video
+  checks: [word_count, shot_count, vo_timing]
+  # word_count_to_seconds ratio: 130 words/min
+parameter_bindings:
+  detail_level:
+    low:
+      include: [intro_shot, finding_shot_1, call_to_action_shot]
+      max_claims_per_section: 2
+    medium:
+      include: [intro_shot, context_shot, finding_shot_1, call_to_action_shot]
+      max_claims_per_section: 3
+    high:
+      include: "*"
+      max_claims_per_section: 4
+  audience:
+    executive:
+      tone: formal
+      jargon: strip
+      sensitivity_max: internal
+    technical:
+      tone: precise
+      jargon: keep
+      sensitivity_max: restricted
+    public:
+      tone: plain
+      jargon: strip
+      sensitivity_max: public
+    field:
+      tone: plain
+      jargon: keep
+      sensitivity_max: internal
+  language:
+    supported: [en, hi, ta]
+    generate_in_target: true

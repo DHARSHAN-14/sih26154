@@ -1,1 +1,68 @@
-# placeholder
+id: presentation
+version: 1
+renderer: pptx
+content_contract:
+  sections:
+    - key: title_slide
+      required: true
+      max_chars: 150
+    - key: agenda
+      required: false
+      max_claims: 5
+    - key: context_slide
+      required: true
+      min_facts: 1
+      max_chars: 400
+    - key: findings_slide
+      required: true
+      min_facts: 2
+      max_claims: 5
+    - key: impact_slide
+      required: false
+      min_facts: 1
+    - key: recommendations_slide
+      required: true
+      min_facts: 1
+      max_claims: 4
+    - key: conclusion_slide
+      required: true
+      max_chars: 300
+layout_contract:
+  renderer: pptx
+  max_slides: 10
+  font_family: "Noto Sans"
+  body_pt: 18
+  heading_pt: 28
+  checks: [slide_count, text_overflow, empty_section, font_size]
+parameter_bindings:
+  detail_level:
+    low:
+      include: [title_slide, context_slide, findings_slide, recommendations_slide]
+      max_claims_per_section: 3
+    medium:
+      include: [title_slide, agenda, context_slide, findings_slide, recommendations_slide, conclusion_slide]
+      max_claims_per_section: 5
+    high:
+      include: "*"
+      max_claims_per_section: 7
+  audience:
+    executive:
+      tone: neutral-formal
+      jargon: strip
+      prefers_fact_types: [metric, event]
+      sensitivity_max: internal
+    technical:
+      tone: precise
+      jargon: keep
+      sensitivity_max: restricted
+    public:
+      tone: plain
+      jargon: strip
+      sensitivity_max: public
+    field:
+      tone: plain
+      jargon: keep
+      sensitivity_max: internal
+  language:
+    supported: [en, hi, ta]
+    generate_in_target: true

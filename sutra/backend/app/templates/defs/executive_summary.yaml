@@ -1,1 +1,60 @@
-# placeholder
+id: executive_summary
+version: 1
+renderer: docx
+content_contract:
+  sections:
+    - key: headline
+      required: true
+      max_chars: 200
+    - key: key_findings
+      required: true
+      min_facts: 2
+      max_claims: 5
+    - key: context
+      required: false
+      min_facts: 1
+    - key: implications
+      required: true
+      min_facts: 1
+    - key: recommendations
+      required: true
+      min_facts: 1
+layout_contract:
+  renderer: docx
+  max_pages: 1
+  font_family: "Noto Sans"
+  body_pt: 11
+  heading_pt: 14
+  checks: [page_count, empty_section]
+parameter_bindings:
+  detail_level:
+    low:
+      include: [headline, key_findings, recommendations]
+      max_claims_per_section: 2
+    medium:
+      include: [headline, key_findings, context, recommendations]
+      max_claims_per_section: 3
+    high:
+      include: "*"
+      max_claims_per_section: 5
+  audience:
+    executive:
+      tone: neutral-formal
+      jargon: strip
+      prefers_fact_types: [metric, event]
+      sensitivity_max: internal
+    technical:
+      tone: precise
+      jargon: keep
+      sensitivity_max: restricted
+    public:
+      tone: plain
+      jargon: strip
+      sensitivity_max: public
+    field:
+      tone: plain
+      jargon: keep
+      sensitivity_max: internal
+  language:
+    supported: [en, hi, ta]
+    generate_in_target: true

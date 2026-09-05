@@ -1,1 +1,63 @@
-# placeholder
+id: infographic
+version: 1
+renderer: html
+content_contract:
+  sections:
+    - key: headline
+      required: true
+      max_chars: 100
+    - key: stat_1
+      required: true
+      max_chars: 80
+      prefers_fact_types: [metric]
+    - key: stat_2
+      required: false
+      max_chars: 80
+      prefers_fact_types: [metric]
+    - key: stat_3
+      required: false
+      max_chars: 80
+      prefers_fact_types: [metric]
+    - key: key_point_1
+      required: true
+      max_chars: 200
+    - key: key_point_2
+      required: false
+      max_chars: 200
+    - key: source_note
+      required: true
+      max_chars: 150
+layout_contract:
+  renderer: html
+  checks: [overflow, empty_slot, image_load, contrast]
+parameter_bindings:
+  detail_level:
+    low:
+      include: [headline, stat_1, key_point_1, source_note]
+      max_claims_per_section: 1
+    medium:
+      include: [headline, stat_1, stat_2, key_point_1, key_point_2, source_note]
+      max_claims_per_section: 2
+    high:
+      include: "*"
+      max_claims_per_section: 2
+  audience:
+    executive:
+      tone: neutral-formal
+      jargon: strip
+      sensitivity_max: public
+    technical:
+      tone: precise
+      jargon: keep
+      sensitivity_max: public
+    public:
+      tone: plain
+      jargon: strip
+      sensitivity_max: public
+    field:
+      tone: plain
+      jargon: keep
+      sensitivity_max: public
+  language:
+    supported: [en, hi, ta]
+    generate_in_target: true

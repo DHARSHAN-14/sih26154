@@ -1,1 +1,35 @@
-{# placeholder #}
+{# repair_claim.j2 — Targeted claim repair prompt #}
+{{ language_instruction }}
+
+A claim has failed validation. Rewrite it to fix the specific issue.
+
+FAILED CLAIM:
+"{{ claim_text }}"
+
+CITED FACTS (the ONLY permitted sources):
+{% for fact in cited_facts %}
+[{{ fact.fact_id }}] {{ fact.canonical_text }}
+{% endfor %}
+
+VALIDATION FAILURE:
+Type: {{ failure_type }}
+{% if offending_span %}
+Offending span: "{{ offending_span }}" — this token is NOT grounded in the cited facts.
+{% endif %}
+{% if entailment_score %}
+Entailment score: {{ entailment_score }} (below threshold {{ threshold }})
+{% endif %}
+
+REPAIR INSTRUCTIONS:
+1. Remove or replace any token not directly supported by the cited facts.
+2. Do NOT add information from outside the cited facts.
+3. Maintain the same intent and section context.
+4. Keep the rewritten claim concise.
+
+Output JSON:
+{
+  "claim_id": "{{ claim_id }}",
+  "text": "<rewritten claim text>",
+  "fact_ids": {{ fact_ids | tojson }},
+  "repair_note": "<brief explanation of what was changed>"
+}

@@ -1,1 +1,37 @@
-{# placeholder #}
+{# generate_section.j2 — Constrained section generation prompt #}
+{{ language_instruction }}
+
+You are generating the "{{ section_key }}" section of a {{ output_format | replace('_',' ') }}.
+
+Operator parameters:
+- Audience: {{ audience }} | Tone: {{ tone }} | Detail: {{ detail_level }}
+{% if max_chars %}
+- Maximum characters for this section: {{ max_chars }}
+{% endif %}
+{% if max_claims %}
+- Maximum claims: {{ max_claims }}
+{% endif %}
+
+You MUST generate ONLY from the facts listed below. Each claim you write MUST:
+1. Be supported by at least one fact from the list
+2. Cite the fact_ids in your output
+3. Not introduce any number, date, name, or entity not present in the cited facts
+4. Stay within the character limit if specified
+
+Available facts for this section:
+{% for fact in facts %}
+[{{ fact.fact_id }}] {{ fact.canonical_text }}
+{% endfor %}
+
+{% if enum_values %}
+This section has a controlled vocabulary. Value MUST be one of: {{ enum_values | join(', ') }}
+{% endif %}
+
+Output JSON conforming to:
+{
+  "section_key": "{{ section_key }}",
+  "claims": [
+    {"claim_id": "CLM-XXXX", "text": "...", "fact_ids": ["F-001", "F-002"]}
+  ],
+  "raw_text": "complete section text as a single string"
+}

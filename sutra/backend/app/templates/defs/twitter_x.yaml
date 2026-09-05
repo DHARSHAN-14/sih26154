@@ -1,1 +1,46 @@
-# placeholder
+id: twitter_x
+version: 1
+renderer: social
+content_contract:
+  sections:
+    - key: post
+      required: true
+      max_chars: 250
+    - key: hashtags
+      required: false
+      max_claims: 3
+layout_contract:
+  renderer: social
+  max_chars: 280
+  checks: [char_limit, hashtag_count, url_count]
+parameter_bindings:
+  detail_level:
+    low:
+      include: [post]
+      max_claims_per_section: 1
+    medium:
+      include: [post, hashtags]
+      max_claims_per_section: 1
+    high:
+      include: "*"
+      max_claims_per_section: 1
+  audience:
+    executive:
+      tone: formal
+      jargon: strip
+      sensitivity_max: public
+    technical:
+      tone: precise
+      jargon: keep
+      sensitivity_max: public
+    public:
+      tone: plain
+      jargon: strip
+      sensitivity_max: public
+    field:
+      tone: plain
+      jargon: keep
+      sensitivity_max: public
+  language:
+    supported: [en, hi, ta]
+    generate_in_target: true

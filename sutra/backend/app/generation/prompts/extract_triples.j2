@@ -1,1 +1,23 @@
-{# placeholder #}
+{# extract_triples.j2 — Schema-constrained triple extraction for the KG #}
+Extract subject-predicate-object triples from the text below.
+Use ONLY predicates from this controlled vocabulary:
+{{ controlled_predicates | join(', ') }}
+
+For each triple:
+- subject: canonical entity name
+- predicate: from the vocabulary above ONLY
+- object: canonical entity name or value
+- fact_id: the source fact this triple derives from
+- temporal_qualifier: ISO date or period if stated (optional)
+
+Rules:
+1. Use the controlled predicate vocabulary exactly as listed.
+2. Resolve entity aliases to their canonical form (e.g. "NTRO", "the Organisation" -> "NTRO").
+3. Do NOT create triples for facts not in the source.
+
+Output JSON: { "triples": [ {subject, predicate, object, fact_id, temporal_qualifier?} ] }
+
+Source facts:
+{% for fact in facts %}
+[{{ fact.fact_id }}] {{ fact.canonical_text }}
+{% endfor %}
