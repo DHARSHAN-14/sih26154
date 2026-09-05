@@ -1,0 +1,132 @@
+﻿@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    @apply bg-slate-950 text-slate-100 font-sans antialiased;
+    min-height: 100dvh;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar       { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { @apply bg-slate-700/60 rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-slate-600; }
+
+  /* Selection */
+  ::selection { @apply bg-blue-500/30 text-white; }
+
+  /* Focus ring */
+  :focus-visible { @apply outline-none ring-2 ring-blue-500/70 ring-offset-1 ring-offset-slate-950; }
+}
+
+@layer components {
+  /* ── Cards ─────────────────────────────────────────────── */
+  .card {
+    @apply bg-slate-900 border border-slate-800 rounded-xl;
+  }
+  .card-raised {
+    @apply bg-slate-800/60 border border-slate-700 rounded-xl;
+  }
+  .card-interactive {
+    @apply card transition-all duration-200 hover:border-slate-600 hover:shadow-lg hover:shadow-black/30;
+  }
+
+  /* ── Buttons ────────────────────────────────────────────── */
+  .btn {
+    @apply inline-flex items-center gap-2 px-3 py-2 rounded-lg
+           text-sm font-medium transition-all duration-150
+           focus-visible:outline-none focus-visible:ring-2
+           focus-visible:ring-blue-500 focus-visible:ring-offset-1
+           focus-visible:ring-offset-slate-950
+           disabled:opacity-40 disabled:pointer-events-none
+           active:scale-[0.97];
+  }
+  .btn-primary   { @apply btn bg-blue-600 hover:bg-blue-500 text-white shadow-sm shadow-blue-900/30; }
+  .btn-secondary { @apply btn bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200; }
+  .btn-ghost     { @apply btn hover:bg-slate-800 text-slate-300; }
+  .btn-danger    { @apply btn bg-red-900/40 hover:bg-red-800/50 border border-red-800 text-red-400; }
+  .btn-success   { @apply btn bg-emerald-900/40 hover:bg-emerald-800/50 border border-emerald-800 text-emerald-400; }
+  .btn-lock      { @apply btn bg-amber-900/40 hover:bg-amber-800/50 border border-amber-800 text-amber-400; }
+  .btn-sm        { @apply px-2 py-1 text-xs; }
+  .btn-lg        { @apply px-5 py-2.5 text-base; }
+
+  /* ── Typography helpers ─────────────────────────────────── */
+  .label        { @apply text-xs font-medium text-slate-400 uppercase tracking-widest; }
+  .mono         { @apply font-mono text-sm text-slate-300; }
+  .mono-sm      { @apply font-mono text-xs text-slate-400; }
+  .page-title   { @apply text-xl font-semibold text-white tracking-tight; }
+  .section-title { @apply text-sm font-semibold text-slate-300 uppercase tracking-wider; }
+
+  /* ── Form elements ──────────────────────────────────────── */
+  .input {
+    @apply w-full bg-slate-900 border border-slate-700
+           rounded-lg px-3 py-2 text-sm text-slate-100
+           placeholder:text-slate-500
+           focus:outline-none focus:ring-1 focus:ring-blue-500
+           focus:border-blue-500 transition-colors;
+  }
+  .select  { @apply input appearance-none cursor-pointer; }
+  .textarea { @apply input resize-none; }
+
+  /* ── Status dots ────────────────────────────────────────── */
+  .dot         { @apply inline-block w-2 h-2 rounded-full; }
+  .dot-pending { @apply dot bg-slate-600; }
+  .dot-running { @apply dot bg-blue-500 animate-pulse; }
+  .dot-done    { @apply dot bg-emerald-500; }
+  .dot-error   { @apply dot bg-red-500; }
+  .dot-skipped { @apply dot bg-slate-700; }
+
+  /* ── Classification banners ─────────────────────────────── */
+  .classify-banner {
+    @apply flex items-center justify-center gap-2
+           py-1 text-xs font-bold tracking-[0.2em] uppercase;
+  }
+  .classify-unclassified { @apply classify-banner bg-green-950/60  border-b border-green-800  text-green-400; }
+  .classify-restricted   { @apply classify-banner bg-yellow-950/60 border-b border-yellow-800 text-yellow-400; }
+  .classify-confidential { @apply classify-banner bg-orange-950/60 border-b border-orange-800 text-orange-400; }
+  .classify-secret       { @apply classify-banner bg-red-950/60    border-b border-red-800    text-red-400; }
+
+  /* ── Pipeline connector line ────────────────────────────── */
+  .pipeline-line {
+    @apply absolute left-[19px] top-8 bottom-0 w-px bg-slate-800;
+  }
+
+  /* ── Skeleton shimmer ───────────────────────────────────── */
+  .skeleton {
+    @apply rounded bg-slate-800 overflow-hidden relative;
+    background: linear-gradient(
+      90deg,
+      #1e293b 0%,
+      #293548 40%,
+      #1e293b 60%,
+      #1e293b 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.6s linear infinite;
+  }
+
+  /* ── Toast variants (used by Toaster component) ─────────── */
+  .toast-base {
+    @apply flex items-start gap-3 px-4 py-3 rounded-xl border
+           text-sm font-medium shadow-xl shadow-black/40
+           min-w-[280px] max-w-[420px];
+  }
+  .toast-success { @apply toast-base bg-emerald-950/80 border-emerald-700 text-emerald-200 backdrop-blur-sm; }
+  .toast-error   { @apply toast-base bg-red-950/80     border-red-700     text-red-200     backdrop-blur-sm; }
+  .toast-warning { @apply toast-base bg-amber-950/80   border-amber-700   text-amber-200   backdrop-blur-sm; }
+  .toast-info    { @apply toast-base bg-blue-950/80    border-blue-700    text-blue-200    backdrop-blur-sm; }
+}
+
+@layer utilities {
+  .text-balance   { text-wrap: balance; }
+  .scrollbar-none { scrollbar-width: none; }
+  .scrollbar-none::-webkit-scrollbar { display: none; }
+  .page-enter     { @apply animate-fade-in; }
+  .slide-in       { @apply animate-slide-in; }
+}
