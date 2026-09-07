@@ -55,9 +55,9 @@ class PptxRenderer:
         # Title slide
         self._add_title_slide(prs, blank_layout, output)
 
-        # Content slides — one per section
+        # Content slides — one per section (skip title_slide)
         for section in output.sections:
-            if not section.claims:
+            if not section.claims or section.section_key == "title_slide":
                 continue
             self._add_content_slide(prs, blank_layout, section, plan)
 
@@ -81,39 +81,74 @@ class PptxRenderer:
 
     def _add_title_slide(self, prs, layout, output: GeneratedOutput) -> None:
         slide = prs.slides.add_slide(layout)
+
+        # Look for custom title slide claim
+        title_claim = None
+        for sec in output.sections:
+            if sec.section_key == "title_slide" and sec.claims:
+                title_claim = sec.claims[0].text
+                break
+
+        title_text = title_claim or output.output_format.replace("_", " ").title()
+
         txb = slide.shapes.add_textbox(
-            Inches(1), Inches(2.5), Inches(11.33), Inches(1.5))
+            Inches(1), Inches(2.0), Inches(11.33), Inches(2.2))
         tf = txb.text_frame
         tf.word_wrap = True
         p = tf.paragraphs[0]
-        p.text = output.output_format.replace("_", " ").title()
-        p.font.size = Pt(36)
+        p.text = title_text
+        p.font.size = Pt(32)
         p.font.bold = True
         p.alignment = PP_ALIGN.CENTER
+        p.font.color.rgb = RGBColor(0x0f, 0x17, 0x2a)
+
+        # Subtitle
+        sub_p = tf.add_paragraph()
+        sub_p.text = "Operational Intelligence Briefing · SUTRA AI Platform\nCryptographically Locked Source of Truth"
+        sub_p.font.size = Pt(16)
+        sub_p.font.color.rgb = RGBColor(0x47, 0x55, 0x69)
+        sub_p.alignment = PP_ALIGN.CENTER
+        sub_p.space_before = Pt(14)
 
     def _add_content_slide(self, prs, layout, section, plan: ContentPlan) -> None:
         slide = prs.slides.add_slide(layout)
 
         # Section title
         title_box = slide.shapes.add_textbox(
-            Inches(0.5), Inches(0.3), Inches(12.33), Inches(0.8))
+            Inches(0.8), Inches(0.5), Inches(11.73), Inches(0.8))
         tf = title_box.text_frame
         p = tf.paragraphs[0]
         p.text = section.section_key.replace("_", " ").title()
         p.font.size = Pt(24)
         p.font.bold = True
+        p.font.color.rgb = RGBColor(0x1e, 0x3a, 0x8a)
 
         # Bullet content
         content_box = slide.shapes.add_textbox(
-            Inches(0.5), Inches(1.3), Inches(12.33), Inches(5.5))
+            Inches(0.8), Inches(1.5), Inches(11.73), Inches(5.2))
         tf = content_box.text_frame
         tf.word_wrap = True
 
         for i, claim in enumerate(section.claims):
-            p = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
-            p.text = u"•  " + claim.text
-            p.font.size = Pt(18)
-            p.space_after = Pt(6)
+            lines = claim.text.split("\n")
+            for line_idx, line in enumerate(lines):
+                if not line.strip():
+                    continue
+                p = tf.paragraphs[0] if (i == 0 and line_idx == 0) else tf.add_paragraph()
+                clean_line = line.strip().lstrip("• ")
+                p.text = u"•  " + clean_line
+                p.font.size = Pt(16)
+                p.space_after = Pt(8)
+                p.font.color.rgb = RGBColor(0x1e, 0x29, 0x3b)
+
+        # Footer
+        footer_box = slide.shapes.add_textbox(
+            Inches(0.8), Inches(6.8), Inches(11.73), Inches(0.4))
+        ftf = footer_box.text_frame
+        fp = ftf.paragraphs[0]
+        fp.text = "SUTRA SIH26154 · Verified Lineage · Confidential"
+        fp.font.size = Pt(9)
+        fp.font.color.rgb = RGBColor(0x94, 0xa3, 0xb8)
 
     def _stub(self, output: GeneratedOutput,
               artifact_dir: pathlib.Path, msg: str) -> RenderedArtifact:

@@ -11,9 +11,11 @@ def select_facts_for_section(
     spec: SectionSpec,
     available_facts: list[Fact],
     max_claims: int = 4,
+    preferred_fact_ids: set[str] | list[str] | None = None,
 ) -> list[Fact]:
-    """Return the best facts for a section, respecting contract constraints."""
-    candidates = available_facts
+    """Return the best facts for a section, respecting contract constraints and RAG retrieval."""
+    candidates = list(available_facts)
+    pref_ids = set(preferred_fact_ids or [])
 
     # Prefer fact types specified in the contract
     if spec.prefers_fact_types:
@@ -21,8 +23,14 @@ def select_facts_for_section(
         others    = [f for f in candidates if f.fact_type not in spec.prefers_fact_types]
         candidates = preferred + others
 
-    # Sort by confidence descending
-    candidates = sorted(candidates, key=lambda f: f.confidence, reverse=True)
+    # If RAG-retrieved facts are provided, boost them to the front
+    if pref_ids:
+        rag_boosted = [f for f in candidates if f.fact_id in pref_ids]
+        non_boosted = [f for f in candidates if f.fact_id not in pref_ids]
+        candidates = rag_boosted + non_boosted
+
+    # Sort candidates maintaining preference order and confidence
+    candidates = sorted(candidates, key=lambda f: (1 if f.fact_id in pref_ids else 0, f.confidence), reverse=True)
 
     selected: list[Fact] = []
     selected_ids: set[str] = set()

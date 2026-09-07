@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 from collections.abc import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import (
@@ -16,14 +16,16 @@ _settings = get_settings()
 
 # ─── Engine ───────────────────────────────────────────────────────────────────
 
-engine = create_async_engine(
-    _settings.database_url,
-    echo=_settings.database_echo,
-    pool_size=_settings.database_pool_size,
-    max_overflow=_settings.database_max_overflow,
-    future=True,
-    pool_pre_ping=True,    # validate connections before use
-)
+_engine_kwargs = {
+    "echo": _settings.database_echo,
+    "future": True,
+}
+if not _settings.database_url.startswith("sqlite"):
+    _engine_kwargs["pool_size"] = _settings.database_pool_size
+    _engine_kwargs["max_overflow"] = _settings.database_max_overflow
+    _engine_kwargs["pool_pre_ping"] = True
+
+engine = create_async_engine(_settings.database_url, **_engine_kwargs)
 
 # ─── Session factory ──────────────────────────────────────────────────────────
 

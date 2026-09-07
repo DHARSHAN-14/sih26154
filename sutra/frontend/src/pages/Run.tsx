@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Play, Square, ChevronRight, Terminal, AlertTriangle, FlaskConical,
@@ -43,40 +43,17 @@ export const PIPELINE_9_STAGES: {
 
 export function mapToDisplayStage(stageId?: string): DisplayStageId {
   if (!stageId) return "ingest";
-  switch (stageId.toLowerCase()) {
-    case "upload":
-    case "multimodal":
-    case "ocr_asr_nlp":
-    case "ingest":
-      return "ingest";
-    case "rag_kg":
-    case "understand":
-      return "understand";
-    case "sot_build":
-    case "sot_lock":
-    case "sot":
-      return "sot";
-    case "planner":
-    case "template":
-    case "validate":
-      return "validate";
-    case "generation":
-    case "generate":
-      return "generate";
-    case "validation":
-    case "cross_output_validation":
-      return "cross_output_validation";
-    case "rendering":
-    case "render":
-      return "render";
-    case "visual_validation":
-      return "visual_validation";
-    case "artifacts":
-    case "complete":
-      return "complete";
-    default:
-      return "ingest";
-  }
+  const s = stageId.toLowerCase();
+  if (s.startsWith("ingest") || s.startsWith("upload") || s.startsWith("ocr")) return "ingest";
+  if (s.startsWith("understand") || s.startsWith("sanitize") || s.startsWith("route") || s.startsWith("retrieve") || s.startsWith("extract") || s.startsWith("build_kg")) return "understand";
+  if (s.startsWith("sot") || s.startsWith("lock")) return "sot";
+  if (s.startsWith("plan") || s.startsWith("template") || (s.startsWith("validate") && !s.includes("fact") && !s.includes("visual"))) return "validate";
+  if (s.startsWith("generate")) return "generate";
+  if (s.startsWith("cross") || s.includes("validate_facts") || s.includes("consistency")) return "cross_output_validation";
+  if (s.startsWith("render")) return "render";
+  if (s.includes("visual")) return "visual_validation";
+  if (s.startsWith("complete") || s.startsWith("artifact") || s.startsWith("finalize")) return "complete";
+  return "ingest";
 }
 
 function makePendingStages(): PipelineStageInfo[] {

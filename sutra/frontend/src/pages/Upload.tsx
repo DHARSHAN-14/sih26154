@@ -1,4 +1,4 @@
-﻿import { useCallback, useRef, useState, useEffect } from "react";
+import { useCallback, useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Upload as UploadIcon, FileText, Image, Music, Video,
@@ -81,15 +81,15 @@ export default function Upload() {
     setStatusMessage("Uploading source material to secure storage...");
 
     try {
-      // 1. Ensure a session exists
+      // 1. Ensure a session exists for real data upload
       let sid = sessionId;
-      if (!sid) {
+      if (!sid || demoMode || sid.startsWith("sess-demo")) {
         try {
           const res = await sessionsApi.create();
           sid = res.data.id;
           initSession(sid);
         } catch {
-          // If session creation endpoint fails (e.g. backend offline), generate local session ID
+          // If session creation endpoint fails, generate unique local session ID
           sid = `sess-${Date.now()}`;
           initSession(sid);
         }
@@ -101,16 +101,22 @@ export default function Upload() {
         const res = await sourcesApi.upload(file, (pct) => {
           setProgress(pct);
           setUploadProgress(pct);
-        });
+        }, sid);
         source = res.data;
       } else if (mode === "url" && url.trim()) {
-        const res = await sourcesApi.uploadUrl(url.trim());
+        const res = await sourcesApi.uploadUrl(url.trim(), sid);
         source = res.data;
       } else if (mode === "text" && text.trim()) {
-        const res = await sourcesApi.uploadText(text.trim(), textName);
+        const res = await sourcesApi.uploadText(text.trim(), textName, sid);
         source = res.data;
       } else {
         throw new Error("No source provided.");
+      }
+
+      // Ensure session store uses the active backend session ID
+      const backendSid = (source as any).sessionId || (source as any).session_id || sid;
+      if (backendSid && backendSid !== sessionId) {
+        initSession(backendSid);
       }
 
       setUploadedSource(source);
@@ -150,7 +156,17 @@ export default function Upload() {
 
       goToStage("truth");
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Upload failed. Check your connection to the backend.";
+      let msg = "Upload failed. Check your connection to the backend.";
+      if (err && typeof err === "object") {
+        const ax = err as any;
+        if (ax.response?.data?.detail) {
+          msg = typeof ax.response.data.detail === "string" ? ax.response.data.detail : JSON.stringify(ax.response.data.detail);
+        } else if (ax.response?.data?.message) {
+          msg = ax.response.data.message;
+        } else if (ax.message) {
+          msg = ax.message;
+        }
+      }
       setError(msg);
       setStatus("error");
       setSourceStatus("failed");

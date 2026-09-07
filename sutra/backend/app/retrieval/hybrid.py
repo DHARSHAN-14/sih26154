@@ -14,6 +14,7 @@ class FusedResult:
     rrf_score: float
     dense_rank: int | None = None
     sparse_rank: int | None = None
+    rerank_score: float = 0.0
 
 
 def reciprocal_rank_fusion(

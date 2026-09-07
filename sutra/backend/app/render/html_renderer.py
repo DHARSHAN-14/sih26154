@@ -72,7 +72,14 @@ class HtmlRenderer:
             key = section.section_key
             claims_text = " ".join(c.text for c in section.claims)
             if "stat" in key:
-                stats.append((key.replace("_", " ").title(), claims_text))
+                if "|" in claims_text:
+                    parts = claims_text.split("|", 1)
+                    val = parts[0].strip()
+                    lbl = parts[1].strip()
+                else:
+                    val = claims_text[:24]
+                    lbl = key.replace("_", " ").title()
+                stats.append((lbl, val))
             elif key == "headline":
                 body_parts.insert(0,
                     f'<div class="headline">{claims_text}</div>')
@@ -86,7 +93,7 @@ class HtmlRenderer:
             for label, val in stats:
                 stat_html += (
                     f'<div class="stat-box">'
-                    f'<div class="stat-value">{val[:40]}</div>'
+                    f'<div class="stat-value">{val}</div>'
                     f'<div class="stat-label">{label}</div>'
                     f'</div>'
                 )

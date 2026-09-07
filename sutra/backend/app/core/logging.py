@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 import logging
 import sys
 from typing import Any
@@ -14,6 +14,17 @@ def configure_logging(log_level: str = "INFO", log_format: str = "console") -> N
     In 'json' mode (production):     structured JSON lines for log aggregators.
     """
     level_int: int = getattr(logging, log_level.upper(), logging.INFO)
+
+    if hasattr(sys.stdout, "reconfigure"):
+        try:
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
+    if hasattr(sys.stderr, "reconfigure"):
+        try:
+            sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
 
     # Standard library logging must be configured FIRST so structlog's
     # stdlib integration has a real Logger with a .name attribute.

@@ -4,7 +4,7 @@ Stages are independently testable and replay-able from persisted artifacts.
 Implementation is filled in as each phase completes.
 """
 from __future__ import annotations
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 
@@ -14,15 +14,16 @@ class StageContext:
     job_id: str
     sot_id: str
     artifact_dir: str
-    params: dict[str, Any]
-    source_paths: list[str]
-    formats: list[str]
+    params: dict[str, Any] = field(default_factory=dict)
+    source_paths: list[str] = field(default_factory=list)
+    formats: list[str] = field(default_factory=list)
     # Filled as pipeline progresses:
     sot: Any = None
-    content_plans: dict[str, Any] = None   # format -> ContentPlan
-    generated: dict[str, Any] = None       # format -> GeneratedOutput
-    artifacts: dict[str, Any] = None       # format -> RenderedArtifact
-    validation_reports: dict[str, Any] = None
+    content_plans: dict[str, Any] = field(default_factory=dict)   # format -> ContentPlan
+    generated: dict[str, Any] = field(default_factory=dict)       # format -> GeneratedOutput
+    artifacts: dict[str, Any] = field(default_factory=dict)       # format -> RenderedArtifact
+    rendered_artifacts: dict[str, Any] = field(default_factory=dict)
+    validation_reports: dict[str, Any] = field(default_factory=dict)
 
 
 STAGE_NAMES = [

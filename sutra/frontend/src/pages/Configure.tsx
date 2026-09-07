@@ -12,8 +12,19 @@ import type {
 } from "@/types";
 
 const OUTPUT_TYPES: OutputType[] = [
-  "press_release","social_post","executive_brief",
-  "technical_report","intelligence_summary","operational_bulletin",
+  "advisory",
+  "executive_summary",
+  "presentation",
+  "infographic",
+  "linkedin",
+  "twitter_x",
+  "video_package",
+  "press_release",
+  "social_post",
+  "executive_brief",
+  "technical_report",
+  "intelligence_summary",
+  "operational_bulletin",
 ];
 
 interface SelectDef<T extends string> { value: T; label: string; desc?: string }
@@ -75,8 +86,19 @@ const CLASSIFICATION_OPTIONS: SelectDef<SecurityClassification>[] = [
 ];
 
 const MAX_TOKENS: Record<OutputType, number> = {
-  press_release: 800, social_post: 280, executive_brief: 600,
-  technical_report: 2000, intelligence_summary: 1000, operational_bulletin: 500,
+  advisory: 1500,
+  executive_summary: 800,
+  presentation: 1200,
+  infographic: 1000,
+  linkedin: 600,
+  twitter_x: 280,
+  video_package: 1000,
+  press_release: 800,
+  social_post: 280,
+  executive_brief: 600,
+  technical_report: 2000,
+  intelligence_summary: 1000,
+  operational_bulletin: 500,
 };
 
 let _idCounter = 0;

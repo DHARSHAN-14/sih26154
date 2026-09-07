@@ -56,6 +56,8 @@ export interface SOTRelation {
   toId: string;
   label: string;
   confidence: number;
+  evidence?: string;
+  sourceRef?: SourceRef;
 }
 
 export interface SourceOfTruth {
@@ -70,6 +72,8 @@ export interface SourceOfTruth {
   entities: SOTEntity[];
   relations: SOTRelation[];
   rawText: string;
+  extractedText?: string;
+  pages?: { page: number; text: string }[];
   summary: string;
   language: string;
   wordCount: number;
@@ -79,6 +83,13 @@ export interface SourceOfTruth {
 // Output Configuration
 // ─────────────────────────────────────────────────────────────────────────────
 export type OutputType =
+  | "advisory"
+  | "executive_summary"
+  | "presentation"
+  | "infographic"
+  | "linkedin"
+  | "twitter_x"
+  | "video_package"
   | "press_release"
   | "social_post"
   | "executive_brief"

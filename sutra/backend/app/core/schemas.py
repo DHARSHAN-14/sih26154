@@ -1,4 +1,4 @@
-﻿"""
+"""
 core/schemas.py  —  THE contract every module codes against.
 
 Freeze this on day 1; change only by team agreement.
@@ -271,7 +271,10 @@ class StageEvent(BaseModel):
     session_id: str
     job_id: str
     stage: str
-    status: Literal["started", "running", "done", "failed", "skipped"]
+    status: str
+    type: str = ""
+    stageId: str = ""
+    progress: int = 0
     message: str = ""
     elapsed_ms: int = 0
     counters: dict[str, Any] = Field(default_factory=dict)

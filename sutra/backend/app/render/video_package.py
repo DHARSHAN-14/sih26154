@@ -37,8 +37,7 @@ class VideoPackageRenderer:
                 "estimated_duration_sec": duration_sec,
                 "on_screen_text": vo_text[:100],
                 "b_roll_cue": f"[B-roll: visuals for '{section.section_key}']",
-                "fact_ids": [c.fact_id for c in section.claims
-                             for _ in c.fact_ids],
+                "fact_ids": [fid for c in section.claims for fid in c.fact_ids],
             })
 
         package = {
@@ -59,6 +58,23 @@ class VideoPackageRenderer:
         file_path.parent.mkdir(parents=True, exist_ok=True)
         file_path.write_text(json.dumps(package, indent=2, ensure_ascii=False),
                              encoding="utf-8")
+
+        # Also create companion teleprompter script
+        script_lines = [
+            "===============================================================",
+            "SUTRA BROADCAST PRODUCTION SCRIPT & TELEPROMPTER",
+            f"Language: {output.language.upper()} | Lock Hash: {output.lock_hash or 'verified'}",
+            "===============================================================\n",
+        ]
+        for s in shots:
+            script_lines.append(f"[SCENE {s['shot_number']}: {s['section'].replace('_', ' ').upper()}]")
+            script_lines.append(f"Est. Duration: ~{s['estimated_duration_sec']}s | Graphic (OST): {s['on_screen_text']}")
+            script_lines.append(f"Visual / B-Roll Cue: {s['b_roll_cue']}")
+            script_lines.append("VOICEOVER DIALOGUE:")
+            script_lines.append(f"{s['voiceover']}\n")
+
+        txt_path = file_path.with_name(f"video_package_{output.output_id[:8]}_teleprompter.txt")
+        txt_path.write_text("\n".join(script_lines), encoding="utf-8")
 
         return RenderedArtifact(
             artifact_id=str(uuid.uuid4()),

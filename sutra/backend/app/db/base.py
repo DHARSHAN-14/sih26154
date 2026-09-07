@@ -1,6 +1,6 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 from datetime import datetime, timezone
-from sqlalchemy import DateTime, String, func
+from sqlalchemy import DateTime, ForeignKey, String, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -42,6 +42,7 @@ class SessionMixin:
     """
     session_id: Mapped[str] = mapped_column(
         String(36),
+        ForeignKey("sessions.id"),
         nullable=False,
         index=True,
     )

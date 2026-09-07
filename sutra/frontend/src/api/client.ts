@@ -1,4 +1,4 @@
-﻿/**
+/**
  * api/client.ts
  * Axios instance + typed API namespaces for SUTRA backend.
  * All calls go through this file — configured via VITE_API_BASE_URL.
@@ -33,27 +33,44 @@ export const api = axios.create({
   timeout: 30_000,
 });
 
-// Attach operator token on every request
+// Attach operator token and session ID on every request
 api.interceptors.request.use((config) => {
   const token = sessionStorage.getItem("sutra_token");
   if (token) config.headers["Authorization"] = `Bearer ${token}`;
+  const sid = sessionStorage.getItem("sutra_session_id");
+  if (sid) {
+    config.headers["X-Session-ID"] = sid;
+  }
+  // Let the browser/Axios compute the multipart boundary delimiter automatically
+  if (config.data instanceof FormData) {
+    delete config.headers["Content-Type"];
+  }
   return config;
 });
 
-// Normalize errors (do not swallow)
+// Normalize errors (do not swallow, extract backend detail)
 api.interceptors.response.use(
   (res) => res,
-  (err) => Promise.reject(err)
+  (err) => {
+    if (err?.response?.data) {
+      const detail = err.response.data.detail || err.response.data.message || err.response.data.error;
+      if (detail && typeof detail === "string") {
+        err.message = detail;
+      }
+    }
+    return Promise.reject(err);
+  }
 );
 
 // ── Sources ───────────────────────────────────────────────────────────────────
 export const sourcesApi = {
   /** Upload a file (multipart). `onProgress` receives 0-100. */
-  upload(file: File, onProgress?: (pct: number) => void) {
+  upload(file: File, onProgress?: (pct: number) => void, sessionId?: string) {
     const form = new FormData();
     form.append("file", file);
-    return api.post<Source>("/sources/upload", form, {
-      headers: { "Content-Type": "multipart/form-data" },
+    const sid = sessionId || sessionStorage.getItem("sutra_session_id") || "";
+    const endpoint = sid ? `/sources/upload?session_id=${encodeURIComponent(sid)}` : "/sources/upload";
+    return api.post<Source>(endpoint, form, {
       onUploadProgress: (e: AxiosProgressEvent) => {
         if (onProgress && e.total)
           onProgress(Math.round((e.loaded * 100) / e.total));
@@ -61,11 +78,17 @@ export const sourcesApi = {
     });
   },
   /** Ingest from a public URL */
-  uploadUrl: (url: string) =>
-    api.post<Source>("/sources/url", { url }),
+  uploadUrl: (url: string, sessionId?: string) => {
+    const sid = sessionId || sessionStorage.getItem("sutra_session_id") || "";
+    const endpoint = sid ? `/sources/url?session_id=${encodeURIComponent(sid)}` : "/sources/url";
+    return api.post<Source>(endpoint, { url });
+  },
   /** Ingest raw text */
-  uploadText: (text: string, name: string) =>
-    api.post<Source>("/sources/text", { text, name }),
+  uploadText: (text: string, name: string, sessionId?: string) => {
+    const sid = sessionId || sessionStorage.getItem("sutra_session_id") || "";
+    const endpoint = sid ? `/sources/text?session_id=${encodeURIComponent(sid)}` : "/sources/text";
+    return api.post<Source>(endpoint, { text, name });
+  },
   /** Fetch a source by id */
   get: (id: string) => api.get<Source>(`/sources/${id}`),
   /** Poll or check source processing status */
@@ -194,3 +217,44 @@ export const versionsApi = {
   restore: (sessionId: string, versionId: string) =>
     api.post<SessionVersion>(`/versions/${sessionId}/${versionId}/restore`),
 };
+
+// ── RAG / Retrieval ───────────────────────────────────────────────────────────
+export interface RetrievalResult {
+  chunk_id: string;
+  text: string;
+  page: number;
+  paragraph: number;
+  doc_id: string;
+  dense_score: number;
+  sparse_score: number;
+  rrf_score: number;
+  rerank_score: number;
+  matched_terms: string[];
+}
+
+export interface RetrievalStatus {
+  session_id: string;
+  indexed_chunks: number;
+  route: string;
+  route_reason: string;
+  token_count: number;
+  token_threshold: number;
+  hybrid_ready: boolean;
+  components: Record<string, string>;
+}
+
+export interface RetrievalQueryResponse {
+  session_id: string;
+  query: string;
+  route: string;
+  total_indexed_chunks: number;
+  results: RetrievalResult[];
+}
+
+export const retrievalApi = {
+  query: (sessionId: string, query: string, topK: number = 5) =>
+    api.post<RetrievalQueryResponse>(`/sessions/${sessionId}/retrieval/query`, { query, top_k: topK }),
+  getStatus: (sessionId: string) =>
+    api.get<RetrievalStatus>(`/sessions/${sessionId}/retrieval/status`),
+};
+

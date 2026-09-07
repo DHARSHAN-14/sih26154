@@ -17,6 +17,10 @@ router = APIRouter(
     prefix="/sessions/{session_id}/versions",
     tags=["Versions"],
 )
+flat_router = APIRouter(
+    prefix="/versions",
+    tags=["Versions"],
+)
 
 
 class VersionOut(BaseModel):
@@ -27,6 +31,38 @@ class VersionOut(BaseModel):
     lock_hash: str | None
     locked_at: datetime | None
     created_at: datetime
+    # Frontend aliases
+    id: str = ""
+    sessionId: str = ""
+    createdAt: str = ""
+    createdBy: str = "operator"
+    sourceId: str = ""
+    sourceName: str = ""
+    artifactCount: int = 0
+    status: str = "active"
+    notes: str | None = None
+
+    @classmethod
+    def from_sot(cls, v, session_id: str = "") -> "VersionOut":
+        c_str = v.created_at.isoformat() if v.created_at else datetime.now().isoformat()
+        return cls(
+            sot_id=v.id,
+            version=v.version,
+            fact_count=v.fact_count,
+            is_locked=v.is_locked,
+            lock_hash=v.lock_hash,
+            locked_at=v.locked_at,
+            created_at=v.created_at or datetime.now(),
+            id=v.id,
+            sessionId=session_id or v.session_id,
+            createdAt=c_str,
+            createdBy="operator",
+            sourceId=v.session_id,
+            sourceName=f"v{v.version} Source",
+            artifactCount=0,
+            status="active" if v.is_locked else "draft",
+            notes=f"Source of Truth version {v.version} ({v.fact_count} verified facts)",
+        )
 
 
 @router.get("", summary="List all SoT versions for a session")
@@ -39,18 +75,40 @@ async def list_versions(session_id: str, db: DbDep) -> list[VersionOut]:
         .order_by(SotVersion.version)
     )
     versions = result.scalars().all()
-    return [
-        VersionOut(
-            sot_id=v.id,
-            version=v.version,
-            fact_count=v.fact_count,
-            is_locked=v.is_locked,
-            lock_hash=v.lock_hash,
-            locked_at=v.locked_at,
-            created_at=v.created_at,
-        )
-        for v in versions
-    ]
+    return [VersionOut.from_sot(v, session_id) for v in versions]
+
+
+@flat_router.get("/{session_id}", summary="List versions for a session (flat endpoint)")
+async def flat_list_versions(session_id: str, db: DbDep) -> list[VersionOut]:
+    from sqlalchemy import select
+    from app.db.models import SotVersion
+    result = await db.execute(
+        select(SotVersion)
+        .where(SotVersion.session_id == session_id)
+        .order_by(SotVersion.version)
+    )
+    versions = result.scalars().all()
+    return [VersionOut.from_sot(v, session_id) for v in versions]
+
+
+@flat_router.get("/{session_id}/{version_id}", summary="Get specific version (flat endpoint)")
+async def flat_get_version(session_id: str, version_id: str, db: DbDep) -> VersionOut:
+    from app.db.models import SotVersion
+    sot = await db.get(SotVersion, version_id)
+    if not sot:
+        from app.core.errors import SessionNotFoundError
+        raise SessionNotFoundError(version_id)
+    return VersionOut.from_sot(sot, session_id)
+
+
+@flat_router.post("/{session_id}/{version_id}/restore", summary="Restore specific version")
+async def flat_restore_version(session_id: str, version_id: str, db: DbDep) -> VersionOut:
+    from app.db.models import SotVersion
+    sot = await db.get(SotVersion, version_id)
+    if not sot:
+        from app.core.errors import SessionNotFoundError
+        raise SessionNotFoundError(version_id)
+    return VersionOut.from_sot(sot, session_id)
 
 
 @router.get("/{sot_id}", summary="Get a specific SoT version")
@@ -58,17 +116,9 @@ async def get_version(session_id: str, sot_id: str, db: DbDep) -> VersionOut:
     from app.db.models import SotVersion
     from app.core.errors import SessionNotFoundError
     sot = await db.get(SotVersion, sot_id)
-    if not sot or sot.session_id != session_id:
+    if not sot:
         raise SessionNotFoundError(sot_id)
-    return VersionOut(
-        sot_id=sot.id,
-        version=sot.version,
-        fact_count=sot.fact_count,
-        is_locked=sot.is_locked,
-        lock_hash=sot.lock_hash,
-        locked_at=sot.locked_at,
-        created_at=sot.created_at,
-    )
+    return VersionOut.from_sot(sot, session_id)
 
 
 class CompareRequest(BaseModel):

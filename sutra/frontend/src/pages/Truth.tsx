@@ -1,12 +1,13 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ShieldCheck, Lock, AlertTriangle, Loader,
   ChevronRight, Tag, FileSearch, RefreshCw, FlaskConical,
+  Search, Database, Cpu, Sparkles,
 } from "lucide-react";
 import { cn, formatDate } from "@/lib/utils";
 import { useSessionStore, selectSOT, selectSource, selectSotLockHash, selectDemoMode } from "@/store/session";
-import { sotApi } from "@/api/client";
+import { sotApi, retrievalApi, type RetrievalResult, type RetrievalStatus } from "@/api/client";
 import GraphView from "@/components/GraphView";
 import type { EntityType } from "@/types";
 
@@ -36,8 +37,13 @@ export default function Truth() {
   const [lockModal, setLockModal]   = useState(false);
   const [locking, setLocking]       = useState(false);
   const [lockError, setLockError]   = useState<string | null>(null);
-  const [activeTab, setActiveTab]   = useState<"entities" | "graph" | "raw">("entities");
+  const [activeTab, setActiveTab]   = useState<"entities" | "graph" | "raw" | "retrieval">("entities");
   const [filterType, setFilterType] = useState<EntityType | "all">("all");
+  const [ragQuery, setRagQuery]     = useState("");
+  const [ragLoading, setRagLoading] = useState(false);
+  const [ragResults, setRagResults] = useState<RetrievalResult[] | null>(null);
+  const [ragStatus, setRagStatus]   = useState<RetrievalStatus | null>(null);
+  const [ragError, setRagError]     = useState<string | null>(null);
 
   // Fetch real SoT from backend if source exists but SoT is not yet in store
   useEffect(() => {
@@ -77,6 +83,59 @@ export default function Truth() {
     fetchSot();
     return () => { mounted = false; };
   }, [source, sot, sessionId, demoMode, setSOT, setSotLockHash]);
+
+  // Fetch RAG status when retrieval tab is active
+  useEffect(() => {
+    if (activeTab === "retrieval" && sessionId && !ragStatus && !demoMode) {
+      retrievalApi.getStatus(sessionId)
+        .then((res) => setRagStatus(res.data))
+        .catch(() => {});
+    }
+  }, [activeTab, sessionId, ragStatus, demoMode]);
+
+  async function handleRagSearch(q?: string) {
+    const queryText = (q || ragQuery).trim();
+    if (!queryText) return;
+    setRagLoading(true);
+    setRagError(null);
+    try {
+      if (demoMode) {
+        setRagResults([
+          {
+            chunk_id: "demo-chk-01",
+            text: "State-sponsored actor APT-X41 conducted coordinated intrusions across 47 industrial control systems belonging to NPGC.",
+            page: 2,
+            paragraph: 1,
+            doc_id: "demo-doc-01",
+            dense_score: 0.88,
+            sparse_score: 4.12,
+            rrf_score: 0.0325,
+            rerank_score: 0.94,
+            matched_terms: queryText.toLowerCase().split(" ").filter((w) => w.length > 3),
+          },
+          {
+            chunk_id: "demo-chk-02",
+            text: "Zero-day vulnerability CVE-2026-7381 (CVSS 9.9) in SCADA middleware exploited with Cobalt Strike beacon persistence.",
+            page: 3,
+            paragraph: 3,
+            doc_id: "demo-doc-01",
+            dense_score: 0.84,
+            sparse_score: 3.85,
+            rrf_score: 0.0318,
+            rerank_score: 0.91,
+            matched_terms: queryText.toLowerCase().split(" ").filter((w) => w.length > 3),
+          },
+        ]);
+      } else if (sessionId) {
+        const res = await retrievalApi.query(sessionId, queryText, 5);
+        setRagResults(res.data.results);
+      }
+    } catch (err: unknown) {
+      setRagError(err instanceof Error ? err.message : "Failed to query RAG vector store");
+    } finally {
+      setRagLoading(false);
+    }
+  }
 
   // Guard: no source uploaded yet
   if (!source) {
@@ -236,17 +295,18 @@ export default function Truth() {
 
       {/* Tabs */}
       <div className="flex gap-1 p-1 bg-slate-900 border border-slate-800 rounded-xl w-fit">
-        {(["entities", "graph", "raw"] as const).map((tab) => (
+        {(["entities", "graph", "raw", "retrieval"] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={cn(
-              "px-4 py-1.5 rounded-lg text-sm font-medium capitalize transition-colors",
+              "px-4 py-1.5 rounded-lg text-sm font-medium capitalize transition-colors flex items-center gap-1.5",
               activeTab === tab ? "bg-blue-600 text-white" : "text-slate-400 hover:text-slate-200"
             )}
           >
-            {tab === "entities" ? `Entities (${sot.entities.length})` :
-             tab === "graph"    ? `Knowledge Graph (${sot.relations.length})` : "Raw Text"}
+            {tab === "entities"  ? `Entities (${sot.entities.length})` :
+             tab === "graph"     ? `Knowledge Graph (${sot.relations.length})` :
+             tab === "raw"       ? "Raw Text" : "RAG Explorer"}
           </button>
         ))}
       </div>
@@ -320,11 +380,191 @@ export default function Truth() {
       )}
 
       {activeTab === "raw" && (
-        <div className="card p-4">
-          <div className="label mb-2">Extracted Raw Text</div>
-          <pre className="text-xs font-mono text-slate-300 whitespace-pre-wrap leading-relaxed max-h-96 overflow-y-auto scrollbar-none">
-            {sot.rawText}
-          </pre>
+        <div className="card p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="label">Extracted Document Text</div>
+            {sot.pages && sot.pages.length > 1 && (
+              <span className="text-xs text-blue-400 font-mono">
+                {sot.pages.length} Pages Extracted
+              </span>
+            )}
+          </div>
+          {sot.pages && sot.pages.length > 0 ? (
+            <div className="space-y-3 max-h-[480px] overflow-y-auto scrollbar-none pr-1">
+              {sot.pages.map((p) => (
+                <div key={p.page} className="p-3.5 rounded-lg bg-slate-900/80 border border-slate-800/80">
+                  <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-800 text-[11px] font-mono text-slate-400">
+                    <span className="text-blue-400 font-semibold">Page {p.page}</span>
+                    <span>{p.text.split(/\s+/).filter(Boolean).length} words</span>
+                  </div>
+                  <pre className="text-xs font-mono text-slate-300 whitespace-pre-wrap leading-relaxed">
+                    {p.text}
+                  </pre>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <pre className="text-xs font-mono text-slate-300 whitespace-pre-wrap leading-relaxed max-h-96 overflow-y-auto scrollbar-none">
+              {sot.rawText}
+            </pre>
+          )}
+        </div>
+      )}
+
+      {/* RAG / Retrieval Explorer */}
+      {activeTab === "retrieval" && (
+        <div className="space-y-4">
+          {/* Header & Status Banner */}
+          <div className="card p-4 bg-slate-900/90 border border-slate-800">
+            <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-800">
+              <div className="flex items-center gap-2">
+                <Database size={18} className="text-blue-400" />
+                <span className="text-sm font-semibold text-white">Hybrid Retrieval Engine</span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-900/40 text-blue-300 border border-blue-800">
+                  Dense Cosine + Sparse BM25 + RRF + Reranker
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span
+                  className={cn(
+                    "text-xs px-2.5 py-1 rounded-md font-mono font-medium border",
+                    ragStatus?.route === "B"
+                      ? "bg-purple-950/60 text-purple-300 border-purple-800"
+                      : "bg-emerald-950/60 text-emerald-300 border-emerald-800"
+                  )}
+                >
+                  {ragStatus?.route === "B" ? "ROUTE B: HYBRID RAG" : "ROUTE A: IN-CONTEXT"}
+                </span>
+                {ragStatus && (
+                  <span className="text-xs text-slate-400 font-mono bg-slate-800 px-2 py-1 rounded">
+                    {ragStatus.indexed_chunks} Chunks Indexed
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Query Form */}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleRagSearch();
+              }}
+              className="flex gap-2 mt-4"
+            >
+              <div className="relative flex-1">
+                <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="text"
+                  value={ragQuery}
+                  onChange={(e) => setRagQuery(e.target.value)}
+                  placeholder="Ask a question or search passages (e.g. CVE vulnerability, threat actor, mitigation port)..."
+                  className="w-full pl-10 pr-4 py-2 bg-slate-950/80 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-blue-500"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={ragLoading || !ragQuery.trim()}
+                className="btn btn-primary px-5 py-2 text-sm flex items-center gap-1.5"
+              >
+                {ragLoading ? <Loader size={15} className="animate-spin" /> : <Search size={15} />}
+                <span>Retrieve</span>
+              </button>
+            </form>
+
+            {/* Quick suggestions */}
+            <div className="flex flex-wrap items-center gap-2 mt-3 pt-2 text-xs text-slate-400">
+              <span className="text-slate-500">Suggestions:</span>
+              {[
+                "Vulnerability CVE and CVSS rating",
+                "Attributed threat actor and targets",
+                "Mitigation port and containment actions",
+              ].map((suggestion) => (
+                <button
+                  key={suggestion}
+                  type="button"
+                  onClick={() => {
+                    setRagQuery(suggestion);
+                    handleRagSearch(suggestion);
+                  }}
+                  className="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors border border-slate-700"
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Error Message */}
+          {ragError && (
+            <div className="p-3 bg-red-950/30 border border-red-900 rounded-lg text-xs text-red-300">
+              {ragError}
+            </div>
+          )}
+
+          {/* Results List */}
+          {ragResults && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-xs text-slate-400 font-mono px-1">
+                <span>Retrieved {ragResults.length} Relevant Passages</span>
+                <span>Sorted by Cross-Encoder Rerank Score</span>
+              </div>
+
+              {ragResults.length === 0 ? (
+                <div className="p-8 text-center text-sm text-slate-500 card">
+                  No matching passages found. Try a different query or keyword.
+                </div>
+              ) : (
+                ragResults.map((res, idx) => (
+                  <div key={res.chunk_id || idx} className="card p-4 space-y-3 bg-slate-900/70 border border-slate-800">
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 rounded bg-blue-950 border border-blue-800 text-blue-300 font-mono font-bold">
+                          #{idx + 1}
+                        </span>
+                        <span className="font-mono text-slate-400">
+                          Chunk: <span className="text-slate-200">{res.chunk_id}</span>
+                        </span>
+                        {res.page > 0 && (
+                          <span className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono text-[11px]">
+                            Page {res.page}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Scores Breakdown */}
+                      <div className="flex items-center gap-2 text-[11px] font-mono">
+                        <span className="px-2 py-0.5 rounded bg-emerald-950/70 border border-emerald-800 text-emerald-300 font-semibold">
+                          Rerank: {res.rerank_score}
+                        </span>
+                        <span className="text-slate-400">Dense: {res.dense_score}</span>
+                        <span className="text-slate-400">BM25: {res.sparse_score}</span>
+                      </div>
+                    </div>
+
+                    {/* Matched Keywords */}
+                    {res.matched_terms && res.matched_terms.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                        <span className="text-[11px] text-slate-500 font-mono">Matched:</span>
+                        {res.matched_terms.map((t) => (
+                          <span
+                            key={t}
+                            className="px-1.5 py-0.5 rounded bg-amber-950/40 border border-amber-800/80 text-amber-300 font-mono text-[11px]"
+                          >
+                            {t}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Passage text */}
+                    <div className="p-3 bg-slate-950 rounded-lg text-xs font-mono text-slate-300 leading-relaxed whitespace-pre-wrap border border-slate-800/60">
+                      {res.text}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
         </div>
       )}
 

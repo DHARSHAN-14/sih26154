@@ -58,14 +58,26 @@ def plan(
     sections: list[SectionPlan] = []
     gaps: list[GapReport] = []
 
+    # Extract RAG retrieval mappings if present
+    section_retrieved = params.get("section_retrieved_facts", {})
+    retrieved_chunk_ids = set(params.get("retrieved_chunk_ids", []))
+
     for spec in template.content_contract.sections:
         if include != "*" and spec.key not in include:
             continue
+
+        # Determine preferred fact IDs from RAG
+        pref_ids = set(section_retrieved.get(spec.key, []))
+        if not pref_ids and retrieved_chunk_ids:
+            for f in available_facts:
+                if any(p.chunk_id in retrieved_chunk_ids for p in f.provenance):
+                    pref_ids.add(f.fact_id)
 
         selected = select_facts_for_section(
             spec=spec,
             available_facts=available_facts,
             max_claims=max_claims,
+            preferred_fact_ids=pref_ids,
         )
 
         gap = spec.required and len(selected) < spec.min_facts

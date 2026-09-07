@@ -17,6 +17,7 @@ from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/sessions/{session_id}/stream", tags=["Stream"])
+flat_router = APIRouter(prefix="/stream", tags=["Stream"])
 
 HEARTBEAT_INTERVAL = 15   # seconds
 
@@ -25,6 +26,18 @@ HEARTBEAT_INTERVAL = 15   # seconds
 async def stream_events(session_id: str) -> StreamingResponse:
     return StreamingResponse(
         _generator(session_id),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+@flat_router.get("/{target_id}", summary="SSE stream for job or session (flat endpoint)")
+async def flat_stream_events(target_id: str) -> StreamingResponse:
+    return StreamingResponse(
+        _generator(target_id),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",

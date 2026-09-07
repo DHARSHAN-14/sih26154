@@ -1,4 +1,4 @@
-﻿/**
+/**
  * store/session.ts
  * Zustand store — single source of client-side truth.
  * All pages read from this store and dispatch actions through it.
@@ -210,9 +210,13 @@ export const useSessionStore = create<SessionStore>()(
         });
       },
 
-      initSession: (id) =>
-        set({
+      initSession: (id) => {
+        try {
+          sessionStorage.setItem("sutra_session_id", id);
+        } catch {}
+        return set({
           sessionId: id,
+          demoMode: false,
           session: {
             id,
             createdAt: new Date().toISOString(),
@@ -237,8 +241,8 @@ export const useSessionStore = create<SessionStore>()(
           outputs:           [],
           validationResults: {},
           reviews:           {},
-          errors:            {},
-        }),
+        });
+      },
 
       setSource: (source) =>
         set((s) => ({

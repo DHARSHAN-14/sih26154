@@ -39,9 +39,7 @@ class SourceDocument(Base, TimestampMixin, SessionMixin):
     ocr_applied: Mapped[bool] = mapped_column(Boolean, default=False)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    session: Mapped["Session"] = relationship(back_populates="sources",
-                                              foreign_keys=[SessionMixin.session_id],
-                                              primaryjoin="SourceDocument.session_id == Session.id")
+    session: Mapped["Session"] = relationship(back_populates="sources")
 
 
 class SotVersion(Base, TimestampMixin, SessionMixin):
@@ -63,7 +61,8 @@ class SotVersion(Base, TimestampMixin, SessionMixin):
 class FactRecord(Base, TimestampMixin, SessionMixin):
     __tablename__ = "facts"
 
-    id: Mapped[str] = mapped_column(String(16), primary_key=True)   # "F-014"
+    db_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    id: Mapped[str] = mapped_column(String(32), index=True)   # "F-014"
     sot_id: Mapped[str] = mapped_column(String(36), ForeignKey("sot_versions.id"))
     fact_type: Mapped[str] = mapped_column(String(32))
     subject: Mapped[str] = mapped_column(String(512))
@@ -94,9 +93,7 @@ class Job(Base, TimestampMixin, SessionMixin):
         DateTime(timezone=True), nullable=True)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    session: Mapped["Session"] = relationship(back_populates="jobs",
-                                               foreign_keys=[SessionMixin.session_id],
-                                               primaryjoin="Job.session_id == Session.id")
+    session: Mapped["Session"] = relationship(back_populates="jobs")
     outputs: Mapped[list["OutputArtifact"]] = relationship(back_populates="job")
     events: Mapped[list["StageEventRecord"]] = relationship(back_populates="job")
 

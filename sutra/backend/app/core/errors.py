@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 from typing import Any
 
 import structlog
@@ -160,7 +160,17 @@ async def sutra_error_handler(request: Request, exc: SutraError) -> JSONResponse
 
 
 async def generic_error_handler(request: Request, exc: Exception) -> JSONResponse:
-    """Catch-all handler for unhandled exceptions — never expose tracebacks."""
+    """Catch-all handler for unhandled exceptions — preserve HTTPException status codes."""
+    from fastapi import HTTPException
+    if isinstance(exc, HTTPException):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={
+                "error": "HTTP_ERROR",
+                "detail": exc.detail,
+                "path": str(request.url.path),
+            },
+        )
     logger.exception(
         "Unhandled exception",
         path=str(request.url.path),
@@ -170,7 +180,7 @@ async def generic_error_handler(request: Request, exc: Exception) -> JSONRespons
         status_code=500,
         content={
             "error": "INTERNAL_ERROR",
-            "detail": "An unexpected internal error occurred.",
+            "detail": str(exc) or "An unexpected internal error occurred.",
             "path": str(request.url.path),
         },
     )

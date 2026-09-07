@@ -18,6 +18,7 @@ from app.api import health
 from app.api import (
     routes_session, routes_sot, routes_jobs,
     routes_stream, routes_outputs, routes_admin,
+    routes_source, routes_versions, routes_retrieval,
 )
 from app.db.session import init_db
 from app.templates.registry import load_all as load_templates
@@ -88,6 +89,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -110,13 +112,24 @@ app.add_exception_handler(Exception, generic_error_handler)
 # ── Routers ──────────────────────────────────────────────────────────────────
 PFX = settings.api_prefix
 
-app.include_router(health.router,            prefix=PFX)
-app.include_router(routes_session.router,    prefix=PFX)
-app.include_router(routes_sot.router,        prefix=PFX)
-app.include_router(routes_jobs.router,       prefix=PFX)
-app.include_router(routes_stream.router,     prefix=PFX)
-app.include_router(routes_outputs.router,    prefix=PFX)
-app.include_router(routes_admin.router,      prefix=PFX)
+app.include_router(health.router,                          prefix=PFX)
+app.include_router(routes_session.router,                  prefix=PFX)
+app.include_router(routes_source.router,                   prefix=PFX)
+app.include_router(routes_source.flat_router,              prefix=PFX)
+app.include_router(routes_sot.router,                      prefix=PFX)
+app.include_router(routes_sot.flat_router,                 prefix=PFX)
+app.include_router(routes_jobs.router,                     prefix=PFX)
+app.include_router(routes_jobs.flat_router,                prefix=PFX)
+app.include_router(routes_stream.router,                   prefix=PFX)
+app.include_router(routes_stream.flat_router,              prefix=PFX)
+app.include_router(routes_outputs.router,                  prefix=PFX)
+app.include_router(routes_outputs.session_outputs_router,  prefix=PFX)
+app.include_router(routes_outputs.flat_router,             prefix=PFX)
+app.include_router(routes_versions.router,                 prefix=PFX)
+app.include_router(routes_versions.flat_router,            prefix=PFX)
+app.include_router(routes_retrieval.router,                prefix=PFX)
+app.include_router(routes_retrieval.flat_router,           prefix=PFX)
+app.include_router(routes_admin.router,                    prefix=PFX)
 
 
 @app.get("/", tags=["Root"], summary="API root — service info")

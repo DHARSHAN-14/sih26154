@@ -11,7 +11,7 @@ from app.render.base import MIME_TYPES
 
 
 class SocialRenderer:
-    def __init__(self, output_format: str, char_limit: int) -> None:
+    def __init__(self, output_format: str = "linkedin", char_limit: int = 3000) -> None:
         self.output_format = output_format
         self.char_limit = char_limit
         self.mime_type = MIME_TYPES.get(output_format, "text/plain")
@@ -22,14 +22,63 @@ class SocialRenderer:
         output: GeneratedOutput,
         artifact_dir: pathlib.Path,
     ) -> RenderedArtifact:
-        lines = []
-        for section in output.sections:
-            for claim in section.claims:
-                lines.append(claim.text)
+        if self.output_format == "linkedin":
+            hook = ""
+            body = ""
+            cta = ""
+            hashtags = ""
+            for s in output.sections:
+                txt = s.raw_text or "\n\n".join(c.text for c in s.claims)
+                if s.section_key == "hook":
+                    hook = txt
+                elif s.section_key in ("call_to_action", "cta"):
+                    cta = txt
+                elif s.section_key == "hashtags":
+                    hashtags = txt
+                else:
+                    body = txt
 
-        text = "\n\n".join(lines)
-        if len(text) > self.char_limit:
-            text = text[: self.char_limit - 3] + "..."
+            parts = [p for p in [hook, body, cta, hashtags] if p.strip()]
+            text = "\n\n".join(parts)
+            if len(text) > self.char_limit:
+                text = text[: self.char_limit - 3] + "..."
+
+        elif self.output_format in ("twitter_x", "social_post"):
+            post = ""
+            hashtags = ""
+            for s in output.sections:
+                txt = s.raw_text or " ".join(c.text for c in s.claims)
+                if s.section_key == "hashtags":
+                    hashtags = txt
+                else:
+                    post = txt
+
+            # Enforce 280 char limit with hashtags
+            ht_len = len(hashtags) + 2 if hashtags else 0
+            max_post_len = self.char_limit - ht_len
+            if len(post) > max_post_len:
+                # Trim at word boundary
+                truncated = post[:max_post_len - 3]
+                if " " in truncated:
+                    truncated = truncated.rsplit(" ", 1)[0]
+                post = truncated + "..."
+
+            if hashtags:
+                text = f"{post}\n\n{hashtags}"
+            else:
+                text = post
+
+            if len(text) > 280:
+                text = text[:277] + "..."
+
+        else:
+            lines = []
+            for section in output.sections:
+                for claim in section.claims:
+                    lines.append(claim.text)
+            text = "\n\n".join(lines)
+            if len(text) > self.char_limit:
+                text = text[: self.char_limit - 3] + "..."
 
         filename = f"{self.output_format}_{output.output_id[:8]}.txt"
         file_path = artifact_dir / filename

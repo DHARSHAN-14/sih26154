@@ -1,4 +1,4 @@
-﻿import { clsx, type ClassValue } from "clsx";
+import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import type { SecurityClassification, OutputType, StageStatus, ArtifactFormat } from "@/types";
 
@@ -66,12 +66,19 @@ export const stageStatusColors: Record<StageStatus, { dot: string; text: string;
 
 /** Output type metadata */
 export const outputTypeMeta: Record<OutputType, { label: string; icon: string; description: string }> = {
+  advisory:             { label: "Strategic Advisory",    icon: "🛡️", description: "Formal security bulletin & recommended directives" },
+  executive_summary:    { label: "Executive Summary",     icon: "📋", description: "Concise decision brief for senior leadership" },
+  presentation:         { label: "Presentation Deck",     icon: "📊", description: "16:9 structured briefing slide deck (.pptx)" },
+  infographic:          { label: "Infographic",           icon: "📈", description: "Visual intelligence data graphic (.html)" },
+  linkedin:             { label: "LinkedIn Briefing",     icon: "💼", description: "Professional stakeholder announcement" },
+  twitter_x:            { label: "Twitter/X Update",      icon: "⚡", description: "Rapid tactical public bulletin" },
+  video_package:        { label: "Video Script Package",  icon: "🎬", description: "Shot list, voiceover script & storyboard package" },
   press_release:        { label: "Press Release",         icon: "📰", description: "Formal public communication for media" },
-  social_post:          { label: "Social Media Post",      icon: "📣", description: "Short-form content for social channels" },
-  executive_brief:      { label: "Executive Brief",        icon: "📋", description: "Concise summary for leadership" },
-  technical_report:     { label: "Technical Report",       icon: "🔬", description: "Detailed technical documentation" },
-  intelligence_summary: { label: "Intelligence Summary",   icon: "🔍", description: "Classified analytical summary" },
-  operational_bulletin: { label: "Operational Bulletin",   icon: "📡", description: "Operational field communication" },
+  social_post:          { label: "Social Media Post",     icon: "📣", description: "Short-form content for social channels" },
+  executive_brief:      { label: "Executive Brief",       icon: "📋", description: "Concise summary for leadership" },
+  technical_report:     { label: "Technical Report",      icon: "🔬", description: "Detailed technical documentation" },
+  intelligence_summary: { label: "Intelligence Summary",  icon: "🔍", description: "Classified analytical summary" },
+  operational_bulletin: { label: "Operational Bulletin",  icon: "📡", description: "Operational field communication" },
 };
 
 /** Artifact format extensions */
